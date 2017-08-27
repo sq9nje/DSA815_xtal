@@ -1,4 +1,8 @@
-import sys
+"""XTAL parameter measurement automation using Rigol DSA815-TG.
+
+"""
+
+import sys, getopt
 import visa
 from openpyxl.workbook import Workbook
 from openpyxl.styles import Font
@@ -67,6 +71,18 @@ def setup_markers(instrument):
 
 if __name__ == '__main__':
     print_banner()
+
+    ws_filename = ''
+
+    # Process command line options
+    opts, args = getopt.getopt(sys.argv[1:], "hf:", ["file="])
+    for opt, arg in opts:
+        if opt == '-h':
+            print("Usage: xtal.py -f <file_name>\n")
+            sys.exit(2)
+        elif opt in ('-f', '--file'):
+            ws_filename = arg
+
     # Connect to first Rigol DSA device using VISA
     rm = visa.ResourceManager()
     dsa = list(filter(lambda x: 'DSA' in x, rm.list_resources()))
