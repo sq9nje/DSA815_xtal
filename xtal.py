@@ -72,16 +72,24 @@ def setup_markers(instrument):
 if __name__ == '__main__':
     print_banner()
 
+    # output file name
     ws_filename = ''
+    # offset in xtal numbering
+    start_offset = 0;
 
     # Process command line options
     opts, args = getopt.getopt(sys.argv[1:], "hf:", ["file="])
     for opt, arg in opts:
         if opt == '-h':
-            print("Usage: xtal.py -f <file_name>\n")
+            print("Usage: xtal.py -f <file_name> -n <starting_number>\n")
             sys.exit(2)
         elif opt in ('-f', '--file'):
             ws_filename = arg
+        elif opt in ('-n', '--number'):
+            try:
+                start_offset = int(arg) - 1
+            except:
+                print("Invalid starting number given! Using 1.")
 
     # Connect to first Rigol DSA device using VISA
     rm = visa.ResourceManager()
@@ -113,14 +121,16 @@ if __name__ == '__main__':
     ws.title = 'Measurements'
 
     # Column headers
-    ws['A1'] = 'Center Frequency'
-    ws['B1'] = '-3dB Bandwidth'
-    ws['C1'] = 'Attenuation'
+    ws['A1'] = 'No.'
+    ws['B1'] = 'Center Frequency'
+    ws['C1'] = '-3dB Bandwidth'
+    ws['D1'] = 'Attenuation'
 
     # Column headers in bold italic
     fnt = Font(bold = True, italic = True)
     ws['A1'].font = fnt
     ws['B1'].font = fnt
+    ws['C1'].font = fnt
     ws['C1'].font = fnt
 
     # Worksheet row counter
@@ -128,18 +138,22 @@ if __name__ == '__main__':
 
     # Measure next oscillator
     while raw_input('Measure XTAL? [Y/n]: ').lower() != 'n':
-        ws_row = ws_row + 1
-
+        xtal_number = ws_row + start_offset
         fc = int(rigol.query('calc:marker:fcount:x?').strip('\n\r'))
         bw = int(rigol.query('calc:bandwidth:result?').strip('\n\r'))
         att = float(rigol.query('calc:marker1:y?').strip('\n\r'))
 
-        # Append values to worksheet
-        ws.cell(column = 1, row = ws_row, value = fc)
-        ws.cell(column = 2, row = ws_row, value = bw)
-        ws.cell(column = 3, row = ws_row, value = att)
-        # Print values
-        print('Fcenter: %d   BW: %d   Att: %f\n'%(fc,bw,att))
+        ws_row = ws_row + 1
 
-    wb_filename = raw_input('Save as: ')
+        # Append values to worksheet
+        ws.cell(column = 1, row = ws_row, value = xtal_number)
+        ws.cell(column = 2, row = ws_row, value = fc)
+        ws.cell(column = 3, row = ws_row, value = bw)
+        ws.cell(column = 4, row = ws_row, value = att)
+        # Print values
+        print('No.: %d Fcenter: %d   BW: %d   Att: %f\n'%(xtal_number,fc,bw,att))
+
+    # Save the file
+    if wb_filename == '':
+        wb_filename = raw_input('Save as: ')
     wb.save(filename = wb_filename)
