@@ -3,6 +3,7 @@
 """
 
 import sys, getopt
+import math
 import visa
 from openpyxl.workbook import Workbook
 from openpyxl.styles import Font
@@ -121,37 +122,36 @@ if __name__ == '__main__':
     ws.title = 'Measurements'
 
     # Column headers
-    ws['A1'] = 'No.'
-    ws['B1'] = 'Center Frequency'
-    ws['C1'] = '-3dB Bandwidth'
-    ws['D1'] = 'Attenuation'
-
+    ws.append(('No.', 'Center Frequency', '-3dB Bandwidth', 'Attenuation', 'Q', 'Rm', 'Lm', 'Cm'))
+    
     # Column headers in bold italic
     fnt = Font(bold = True, italic = True)
-    ws['A1'].font = fnt
-    ws['B1'].font = fnt
-    ws['C1'].font = fnt
-    ws['C1'].font = fnt
-
+    for cell in ws["1:1"]:
+        cell.font = fnt
+    
     # Worksheet row counter
-    ws_row = 1
+    #ws_row = 1
+
+    xtal_number = start_offset
 
     # Measure next oscillator
     while raw_input('Measure XTAL? [Y/n]: ').lower() != 'n':
-        xtal_number = ws_row + start_offset
-        fc = int(rigol.query('calc:marker:fcount:x?').strip('\n\r'))
-        bw = int(rigol.query('calc:bandwidth:result?').strip('\n\r'))
+        xtal_number = xtal_number + 1
+        fc = float(rigol.query('calc:marker:fcount:x?').strip('\n\r'))
+        bw = float(rigol.query('calc:bandwidth:result?').strip('\n\r'))
         att = float(rigol.query('calc:marker1:y?').strip('\n\r'))
-
-        ws_row = ws_row + 1
+        
+        rm = 25 * (math.pow(10, bw/20) - 1)
+        reff = 25 + rm
+        q = fc/bw
+        lm = reff / (2 * math.pi * bw)
+        cm = bw / 2 * math.pi * reff * fc**2
 
         # Append values to worksheet
-        ws.cell(column = 1, row = ws_row, value = xtal_number)
-        ws.cell(column = 2, row = ws_row, value = fc)
-        ws.cell(column = 3, row = ws_row, value = bw)
-        ws.cell(column = 4, row = ws_row, value = att)
+        ws.append((xtal_number, fc, bw, att, q, rm, lm, cm))
+
         # Print values
-        print('No.: %d Fcenter: %d   BW: %d   Att: %f\n'%(xtal_number,fc,bw,att))
+        print('No.: %d Fc: %f   BW: %f   Att: %f   Q: %f   Rm: %f   Lm: %f   Cm: %f\n'%(xtal_number, fc, bw, att, q, rm, lm, cm))
 
     # Save the file
     if wb_filename == '':
