@@ -93,14 +93,14 @@ if __name__ == '__main__':
                 print("Invalid starting number given! Using 1.")
 
     # Connect to first Rigol DSA device using VISA
-    rm = visa.ResourceManager()
-    dsa = list(filter(lambda x: 'DSA' in x, rm.list_resources()))
+    resm = visa.ResourceManager()
+    dsa = list(filter(lambda x: 'DSA' in x, resm.list_resources()))
     if len(dsa) != 1:
         print('Bad instrument list: Could not find a Rigol DSA.')
         sys.exit(-1)
 
     print('Connecting to device...')
-    rigol = rm.open_resource(dsa[0])
+    rigol = resm.open_resource(dsa[0])
     rigol.timeout = 10000
     
     # Print device ID
